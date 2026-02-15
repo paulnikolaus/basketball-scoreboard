@@ -12,8 +12,6 @@ import androidx.compose.ui.unit.*
 import com.paulnikolaus.scoreboard.data.Team
 import com.paulnikolaus.scoreboard.ui.components.ScorePanel
 import com.paulnikolaus.scoreboard.ui.components.ClockDisplay
-import androidx.compose.ui.platform.LocalConfiguration
-import android.content.res.Configuration
 
 @Composable
 fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
@@ -49,10 +47,6 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
             MaterialTheme.colorScheme.onSurface
         else
             Color.Red
-
-    val configuration = LocalConfiguration.current
-    val isLandscape =
-        configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
 
     Surface {
