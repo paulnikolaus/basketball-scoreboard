@@ -12,6 +12,9 @@ import androidx.compose.ui.unit.*
 import com.paulnikolaus.scoreboard.data.Team
 import com.paulnikolaus.scoreboard.ui.components.ScorePanel
 import com.paulnikolaus.scoreboard.ui.components.ClockDisplay
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
+
 
 @Composable
 fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
@@ -48,6 +51,10 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
         else
             Color.Red
 
+    val configuration = LocalConfiguration.current
+    val isLandscape =
+        configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
 
     Surface {
         Surface {
@@ -73,7 +80,7 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                 // 🟢 CLOCKS
                 Box(
                     modifier = Modifier
-                        .weight(0.8f)   // slightly narrower than score panels
+                        .weight(1.3f)   // ← slightly bigger
                         .fillMaxHeight(),
                     contentAlignment = Alignment.Center
                 ) {
@@ -91,17 +98,43 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                             timeText = gameTimeText,
                             textColor = gameColor,
                             controls = {
-                                Row {
-                                    Button(onClick = { viewModel.toggleGameClock() }) {
-                                        Text("Start / Stop")
+                                if (isLandscape) {
+                                    // Landscape → horizontal
+                                    Row {
+                                        Button(onClick = { viewModel.toggleGameClock() }) {
+                                            Text("Start / Stop")
+                                        }
+
+                                        Spacer(Modifier.width(8.dp))
+
+                                        Button(onClick = { viewModel.resetGameClock() }) {
+                                            Text("Reset")
+                                        }
                                     }
 
-                                    Spacer(Modifier.width(8.dp))
+                                } else {
+                                    // Portrait → vertical
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Button(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            onClick = { viewModel.toggleGameClock() }
+                                        ) {
+                                            Text("Start / Stop")
+                                        }
 
-                                    Button(onClick = { viewModel.resetGameClock() }) {
-                                        Text("Reset")
+                                        Spacer(Modifier.height(8.dp))
+
+                                        Button(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            onClick = { viewModel.resetGameClock() }
+                                        ) {
+                                            Text("Reset")
+                                        }
                                     }
                                 }
+
                             }
                         )
 
@@ -112,56 +145,89 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                             timeText = shotTimeText,
                             textColor = shotColor,
                             controls = {
-                                Column {
 
-                                    // Start / Stop on its own row
-                                    Button(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        onClick = { viewModel.toggleShotClock() }
-                                    ) {
-                                        Text("Start / Stop")
-                                    }
+                                if (isLandscape) {
 
-                                    Spacer(Modifier.height(8.dp))
-
-                                    // 24s / 14s share width equally
+                                    // 🖥 Landscape → all in one row
                                     Row(
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
 
                                         Button(
                                             modifier = Modifier.weight(1f),
-                                            onClick = {
-                                                viewModel.resetShotClock(24)
-                                            }
+                                            onClick = { viewModel.toggleShotClock() }
+                                        ) {
+                                            Text("Start / Stop")
+                                        }
+
+                                        Button(
+                                            modifier = Modifier.weight(1f),
+                                            onClick = { viewModel.resetShotClock(24) }
                                         ) {
                                             Text("24s")
                                         }
 
-                                        Spacer(Modifier.width(8.dp))
-
                                         Button(
                                             modifier = Modifier.weight(1f),
-                                            onClick = {
-                                                viewModel.resetShotClock(14)
-                                            }
+                                            onClick = { viewModel.resetShotClock(14) }
                                         ) {
                                             Text("14s")
                                         }
                                     }
+
+                                } else {
+
+                                    // 📱 Portrait
+                                    Column {
+
+                                        Button(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            onClick = { viewModel.toggleShotClock() }
+                                        ) {
+                                            Text("Start / Stop")
+                                        }
+
+                                        Spacer(Modifier.height(8.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+
+                                            Button(
+                                                modifier = Modifier.weight(1f),
+                                                onClick = { viewModel.resetShotClock(24) }
+                                            ) {
+                                                Text("24s")
+                                            }
+
+                                            Spacer(Modifier.width(8.dp))
+
+                                            Button(
+                                                modifier = Modifier.weight(1f),
+                                                onClick = { viewModel.resetShotClock(14) }
+                                            ) {
+                                                Text("14s")
+                                            }
+                                        }
+                                    }
                                 }
                             }
+
                         )
 
-                        Spacer(Modifier.height(32.dp))
+//                        Show this button only in portrait mode
+                        if (!isLandscape) {
+                            Spacer(Modifier.height(32.dp))
 
-                        Button(
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Red
-                            ),
-                            onClick = { viewModel.resetScores() }
-                        ) {
-                            Text("RESET SCORE")
+                            Button(
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red
+                                ),
+                                onClick = { viewModel.resetScores() }
+                            ) {
+                                Text("RESET SCORE")
+                            }
                         }
 
                     }

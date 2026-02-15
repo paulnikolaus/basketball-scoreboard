@@ -28,7 +28,7 @@ fun ClockDisplay(
             style = MaterialTheme.typography.titleLarge
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))   // slightly tighter title → time
 
         Text(
             text = timeText,
@@ -38,7 +38,7 @@ fun ClockDisplay(
             )
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(4.dp))   // reduced from 12dp → cleaner
 
         controls()
     }
