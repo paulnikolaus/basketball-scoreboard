@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Gradle
+.gradle/
+build/
+
+# Local config (contains SDK path)
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+
+# Kotlin/Java
+out/
+
+# NDK
+.externalNativeBuild/
+.cxx/
+
+# Logs
+*.log
+
+# Captures
+captures/
+
+# Keystore files (VERY IMPORTANT)
+*.jks
+*.keystore
