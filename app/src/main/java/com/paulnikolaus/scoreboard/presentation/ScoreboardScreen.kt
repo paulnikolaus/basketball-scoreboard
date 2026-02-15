@@ -35,9 +35,10 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
         "%02d".format(seconds)
     }
 
+    val shotButtonHeight = 48.dp
+
     val isShotRunning by viewModel.isShotClockRunning.collectAsState()
     val isGameRunning by viewModel.isGameClockRunning.collectAsState()
-
 
     val shotColor =
         if (isShotRunning)
@@ -54,7 +55,6 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
     val configuration = LocalConfiguration.current
     val isLandscape =
         configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
 
     Surface {
         Surface {
@@ -80,7 +80,7 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                 // 🟢 CLOCKS
                 Box(
                     modifier = Modifier
-                        .weight(1.3f)   // ← slightly bigger
+                        .weight(1.4f)   // ← slightly bigger
                         .fillMaxHeight(),
                     contentAlignment = Alignment.Center
                 ) {
@@ -155,21 +155,28 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                                     ) {
 
                                         Button(
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(shotButtonHeight),
                                             onClick = { viewModel.toggleShotClock() }
-                                        ) {
+                                        )
+                                        {
                                             Text("Start / Stop")
                                         }
 
                                         Button(
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(shotButtonHeight),
                                             onClick = { viewModel.resetShotClock(24) }
                                         ) {
                                             Text("24s")
                                         }
 
                                         Button(
-                                            modifier = Modifier.weight(1f),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(shotButtonHeight),
                                             onClick = { viewModel.resetShotClock(14) }
                                         ) {
                                             Text("14s")
@@ -182,7 +189,9 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                                     Column {
 
                                         Button(
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(shotButtonHeight),
                                             onClick = { viewModel.toggleShotClock() }
                                         ) {
                                             Text("Start / Stop")
@@ -191,7 +200,8 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                                         Spacer(Modifier.height(8.dp))
 
                                         Row(
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = Modifier
+                                                .height(shotButtonHeight),
                                         ) {
 
                                             Button(
