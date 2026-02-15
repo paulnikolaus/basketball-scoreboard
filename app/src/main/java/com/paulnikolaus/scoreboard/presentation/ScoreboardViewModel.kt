@@ -42,6 +42,16 @@ class ScoreboardViewModel(
         get() = gameClock.isRunningFlow
 
     // ----------------------------
+    // Buzzer Timer Events
+    // ----------------------------
+
+    private val _gameBuzzerEvent = MutableStateFlow(false)
+    val gameBuzzerEvent: StateFlow<Boolean> = _gameBuzzerEvent
+
+    private val _shotBuzzerEvent = MutableStateFlow(false)
+    val shotBuzzerEvent: StateFlow<Boolean> = _shotBuzzerEvent
+
+    // ----------------------------
     // Score State
     // ----------------------------
 
@@ -99,6 +109,7 @@ class ScoreboardViewModel(
             shotClock.start()
         }
 
+
         // ----------------------------
         // Persist Time Continuously
         // ----------------------------
@@ -114,6 +125,30 @@ class ScoreboardViewModel(
                 savedStateHandle[KEY_SHOT_TIME] = remaining
             }
         }
+
+//        Game clock zero detection
+        viewModelScope.launch {
+            var previous = gameClock.remainingMs.value
+            gameTime.collect { current ->
+                if (previous > 0 && current == 0L) {
+                    _gameBuzzerEvent.value = true
+                }
+                previous = current
+            }
+        }
+
+//        Shot clock zero detection
+        viewModelScope.launch {
+            var previous = shotClock.remainingMs.value
+            shotTime.collect { current ->
+                if (previous > 0 && current == 0L) {
+                    _shotBuzzerEvent.value = true
+                }
+                previous = current
+            }
+        }
+
+
     }
 
     // ----------------------------
@@ -150,8 +185,6 @@ class ScoreboardViewModel(
         }
     }
 
-
-
     fun toggleGameClock() {
         if (gameClock.isRunning()) {
             gameClock.stop()
@@ -166,7 +199,6 @@ class ScoreboardViewModel(
         gameClock.reset()
 
         savedStateHandle[KEY_GAME_RUNNING] = false
-
     }
 
     // ----------------------------
@@ -189,7 +221,6 @@ class ScoreboardViewModel(
         }
 
         savedStateHandle[KEY_SHOT_RUNNING] = shotClock.isRunning()
-
     }
 
     // ----------------------------
@@ -233,5 +264,14 @@ class ScoreboardViewModel(
 
         savedStateHandle[KEY_HOME] = _scoreState.value.home
         savedStateHandle[KEY_AWAY] = _scoreState.value.away
+    }
+
+//    Game buzzer
+    fun consumeGameBuzzer() {
+        _gameBuzzerEvent.value = false
+    }
+
+    fun consumeShotBuzzer() {
+        _shotBuzzerEvent.value = false
     }
 }

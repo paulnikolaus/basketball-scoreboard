@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.*
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
@@ -26,16 +27,40 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
     val shotMs by viewModel.shotTime.collectAsState()
 
     val gameTimeText = run {
-        val totalSeconds = (gameMs / 1000).toInt()
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        "%d:%02d".format(minutes, seconds)
+        val totalMs = gameMs
+
+        if (totalMs >= 10_000L) {
+
+            // Normal display MM:SS
+            val totalSeconds = (totalMs / 1000).toInt()
+            val minutes = totalSeconds / 60
+            val seconds = totalSeconds % 60
+
+            "%d:%02d".format(minutes, seconds)
+        } else {
+
+            // Final 10 seconds → seconds + tenths
+            val seconds = totalMs / 1000
+            val tenths = (totalMs % 1000) / 100
+
+            "%.1f".format(seconds + tenths / 10f)
+        }
     }
 
+
     val shotTimeText = run {
-        val seconds = (shotMs / 1000).toInt()
-        "%02d".format(seconds)
+        val totalMs = shotMs
+
+        if (totalMs >= 10_000L) {
+            val seconds = (totalMs / 1000).toInt()
+            "%02d".format(seconds)
+        } else {
+            val seconds = totalMs / 1000
+            val tenths = (totalMs % 1000) / 100
+            "%.1f".format(seconds + tenths / 10f)
+        }
     }
+
 
     val shotButtonHeight = 48.dp
 
@@ -62,6 +87,11 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
     val isLandscape =
         configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    val context = LocalContext.current
+    val buzzerManager = remember { BuzzerManager(context) }
+
+    val gameBuzz by viewModel.gameBuzzerEvent.collectAsState()
+    val shotBuzz by viewModel.shotBuzzerEvent.collectAsState()
 
     Surface {
         Row(
@@ -280,6 +310,7 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
         }
     }
 
+//    Set time dialog
     if (showGameDialog) {
         AlertDialog(
             onDismissRequest = { showGameDialog = false },
@@ -378,4 +409,26 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
         )
     }
 
+//    Buzzer
+
+    LaunchedEffect(gameBuzz) {
+        if (gameBuzz) {
+            buzzerManager.play()
+            viewModel.consumeGameBuzzer()
+        }
+    }
+
+    LaunchedEffect(shotBuzz) {
+        if (shotBuzz) {
+            buzzerManager.play()
+            viewModel.consumeShotBuzzer()
+        }
+    }
+
+
+    DisposableEffect(Unit) {
+        onDispose {
+            buzzerManager.release()
+        }
+    }
 }
