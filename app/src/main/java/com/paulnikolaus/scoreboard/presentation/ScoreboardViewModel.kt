@@ -1,5 +1,6 @@
 package com.paulnikolaus.scoreboard.presentation
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paulnikolaus.scoreboard.data.ScoreState
@@ -8,8 +9,21 @@ import com.paulnikolaus.scoreboard.timer.CountdownTimer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class ScoreboardViewModel : ViewModel() {
+class ScoreboardViewModel(
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    companion object {
+        private const val KEY_HOME = "home_score"
+        private const val KEY_AWAY = "away_score"
+        private const val KEY_GAME_TIME = "game_time"
+        private const val KEY_SHOT_TIME = "shot_time"
+        private const val KEY_GAME_RUNNING = "game_running"
+        private const val KEY_SHOT_RUNNING = "shot_running"
+    }
+
 
     // ----------------------------
     // Timers
@@ -27,17 +41,6 @@ class ScoreboardViewModel : ViewModel() {
     val isGameClockRunning: StateFlow<Boolean>
         get() = gameClock.isRunningFlow
 
-
-
-    init {
-        // Default game clock = 10 minutes
-        gameClock.setDuration(10 * 60_000L)
-
-        // Optional: initialize shot clock to 24 seconds
-        shotClock.setDuration(24_000L)
-    }
-
-
     // ----------------------------
     // Score State
     // ----------------------------
@@ -45,6 +48,73 @@ class ScoreboardViewModel : ViewModel() {
     private val _scoreState = MutableStateFlow(ScoreState())
     val scoreState: StateFlow<ScoreState> =
         _scoreState.asStateFlow()
+
+    init {
+
+        // ----------------------------
+        // Restore Scores
+        // ----------------------------
+
+        val restoredHome = savedStateHandle.get<Int>(KEY_HOME) ?: 0
+        val restoredAway = savedStateHandle.get<Int>(KEY_AWAY) ?: 0
+
+        _scoreState.value = ScoreState(
+            home = restoredHome,
+            away = restoredAway
+        )
+
+        // ----------------------------
+        // Restore Game Clock
+        // ----------------------------
+
+        val restoredGameTime =
+            savedStateHandle.get<Long>(KEY_GAME_TIME)
+                ?: (10 * 60_000L)
+
+        val gameWasRunning =
+            savedStateHandle.get<Boolean>(KEY_GAME_RUNNING)
+                ?: false
+
+        gameClock.setDuration(restoredGameTime)
+
+        if (gameWasRunning) {
+            gameClock.start()
+        }
+
+        // ----------------------------
+        // Restore Shot Clock
+        // ----------------------------
+
+        val restoredShotTime =
+            savedStateHandle.get<Long>(KEY_SHOT_TIME)
+                ?: 24_000L
+
+        val shotWasRunning =
+            savedStateHandle.get<Boolean>(KEY_SHOT_RUNNING)
+                ?: false
+
+        shotClock.setDuration(restoredShotTime)
+
+        if (shotWasRunning) {
+            shotClock.start()
+        }
+
+        // ----------------------------
+        // Persist Time Continuously
+        // ----------------------------
+
+        viewModelScope.launch {
+            gameTime.collect { remaining ->
+                savedStateHandle[KEY_GAME_TIME] = remaining
+            }
+        }
+
+        viewModelScope.launch {
+            shotTime.collect { remaining ->
+                savedStateHandle[KEY_SHOT_TIME] = remaining
+            }
+        }
+    }
 
     // ----------------------------
     // Exposed Timer Flows
@@ -60,9 +130,27 @@ class ScoreboardViewModel : ViewModel() {
     // Game Clock Controls
     // ----------------------------
 
-    fun setGameDuration(minutes: Int) {
-        gameClock.setDuration(minutes * 60_000L)
+    fun setGameDuration(minutes: Int, seconds: Int) {
+        if (
+            minutes in 0..60 &&
+            seconds in 0..59
+        ) {
+
+            val totalMs = (minutes * 60 + seconds) * 1000L
+
+            // Prevent values > 60:00
+            if (totalMs <= 60 * 60_000L) {
+
+                gameClock.stop()
+                gameClock.setDuration(totalMs)
+
+                savedStateHandle[KEY_GAME_TIME] = totalMs
+                savedStateHandle[KEY_GAME_RUNNING] = false
+            }
+        }
     }
+
+
 
     fun toggleGameClock() {
         if (gameClock.isRunning()) {
@@ -70,10 +158,15 @@ class ScoreboardViewModel : ViewModel() {
         } else {
             gameClock.start()
         }
+
+        savedStateHandle[KEY_GAME_RUNNING] = gameClock.isRunning()
     }
 
     fun resetGameClock() {
         gameClock.reset()
+
+        savedStateHandle[KEY_GAME_RUNNING] = false
+
     }
 
     // ----------------------------
@@ -83,6 +176,8 @@ class ScoreboardViewModel : ViewModel() {
     fun resetShotClock(seconds: Int) {
         shotClock.stop()                 // ensure it is stopped
         shotClock.setDuration(seconds * 1000L)
+
+        savedStateHandle[KEY_SHOT_RUNNING] = false
     }
 
 
@@ -92,6 +187,9 @@ class ScoreboardViewModel : ViewModel() {
         } else {
             shotClock.start()
         }
+
+        savedStateHandle[KEY_SHOT_RUNNING] = shotClock.isRunning()
+
     }
 
     // ----------------------------
@@ -109,6 +207,9 @@ class ScoreboardViewModel : ViewModel() {
                 away = _scoreState.value.away + points
             )
         }
+
+        savedStateHandle[KEY_HOME] = _scoreState.value.home
+        savedStateHandle[KEY_AWAY] = _scoreState.value.away
     }
 
     fun undoScore(team: Team) {
@@ -122,9 +223,15 @@ class ScoreboardViewModel : ViewModel() {
                 away = (_scoreState.value.away - 1).coerceAtLeast(0)
             )
         }
+
+        savedStateHandle[KEY_HOME] = _scoreState.value.home
+        savedStateHandle[KEY_AWAY] = _scoreState.value.away
     }
 
     fun resetScores() {
         _scoreState.value = ScoreState()
+
+        savedStateHandle[KEY_HOME] = _scoreState.value.home
+        savedStateHandle[KEY_AWAY] = _scoreState.value.away
     }
 }
