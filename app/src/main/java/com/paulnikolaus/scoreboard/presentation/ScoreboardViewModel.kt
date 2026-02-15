@@ -59,6 +59,23 @@ class ScoreboardViewModel(
     val scoreState: StateFlow<ScoreState> =
         _scoreState.asStateFlow()
 
+    // ----------------------------
+    // Dialog State
+    // ----------------------------
+
+    private val _showGameDialog = MutableStateFlow(false)
+    val showGameDialog: StateFlow<Boolean> =
+        _showGameDialog.asStateFlow()
+
+    fun openGameDialog() {
+        _showGameDialog.value = true
+    }
+
+    fun closeGameDialog() {
+        _showGameDialog.value = false
+    }
+
+
     init {
 
         // ----------------------------
@@ -195,11 +212,13 @@ class ScoreboardViewModel(
         savedStateHandle[KEY_GAME_RUNNING] = gameClock.isRunning()
     }
 
-    fun resetGameClock() {
-        gameClock.reset()
+//    replaced by Set Time
 
-        savedStateHandle[KEY_GAME_RUNNING] = false
-    }
+//    fun resetGameClock() {
+//        gameClock.reset()
+//
+//        savedStateHandle[KEY_GAME_RUNNING] = false
+//    }
 
     // ----------------------------
     // Shot Clock Controls
@@ -266,7 +285,7 @@ class ScoreboardViewModel(
         savedStateHandle[KEY_AWAY] = _scoreState.value.away
     }
 
-//    Game buzzer
+    //    Game buzzer
     fun consumeGameBuzzer() {
         _gameBuzzerEvent.value = false
     }

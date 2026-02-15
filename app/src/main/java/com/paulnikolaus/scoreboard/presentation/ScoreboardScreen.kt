@@ -67,7 +67,7 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
     val isShotRunning by viewModel.isShotClockRunning.collectAsState()
     val isGameRunning by viewModel.isGameClockRunning.collectAsState()
 
-    var showGameDialog by remember { mutableStateOf(false) }
+    val showGameDialog by viewModel.showGameDialog.collectAsState()
     var minuteInput by remember { mutableStateOf("") }
     var secondInput by remember { mutableStateOf("") }
 
@@ -145,13 +145,12 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
 
                                     Button(
                                         onClick = {
-                                             // Pre-fill dialog with current value
-                                            minuteInput = 10.toString()
-                                            secondInput = 0.toString().padStart(2, '0')
-
-                                            showGameDialog = true
+                                            minuteInput = "10"
+                                            secondInput = "00"
+                                            viewModel.openGameDialog()   // ✅
                                         }
-                                    ) {
+                                    )
+                                    {
                                         Text("Set Time")
                                     }
 
@@ -173,13 +172,12 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
 
                                     Button(
                                         onClick = {
-                                            // Pre-fill dialog with current value
-                                            minuteInput = 10.toString()
-                                            secondInput = 0.toString().padStart(2, '0')
-
-                                            showGameDialog = true
+                                            minuteInput = "10"
+                                            secondInput = "00"
+                                            viewModel.openGameDialog()   // ✅
                                         }
-                                    ) {
+                                    )
+                                    {
                                         Text("Set Time")
                                     }
                                 }
@@ -308,105 +306,105 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
                 )
             }
         }
-    }
 
-//    Set time dialog
-    if (showGameDialog) {
-        AlertDialog(
-            onDismissRequest = { showGameDialog = false },
-            title = { Text("Set Game Time (MM : SS)") },
-            text = {
+        //    Set time dialog
+        if (showGameDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.closeGameDialog() },
+                title = { Text("Set Game Time (MM : SS)") },
+                text = {
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
 
-                    OutlinedTextField(
-                        modifier = Modifier.width(100.dp),
-                        value = minuteInput,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() } && newValue.length <= 2) {
+                        OutlinedTextField(
+                            modifier = Modifier.width(100.dp),
+                            value = minuteInput,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() } && newValue.length <= 2) {
 
-                                val numericValue = newValue.toIntOrNull()
+                                    val numericValue = newValue.toIntOrNull()
 
-                                if (numericValue == null || numericValue <= 60) {
-                                    minuteInput = newValue
+                                    if (numericValue == null || numericValue <= 60) {
+                                        minuteInput = newValue
+                                    }
                                 }
-                            }
-                        },
-                        singleLine = true,
-                        label = { Text("MM") },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
+                            },
+                            singleLine = true,
+                            label = { Text("MM") },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            )
                         )
-                    )
 
-                    Text(
-                        ":",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                        Text(
+                            ":",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
 
-                    OutlinedTextField(
-                        modifier = Modifier.width(100.dp),
-                        value = secondInput,
-                        onValueChange = { newValue ->
-                            if (newValue.all { it.isDigit() } && newValue.length <= 2) {
+                        OutlinedTextField(
+                            modifier = Modifier.width(100.dp),
+                            value = secondInput,
+                            onValueChange = { newValue ->
+                                if (newValue.all { it.isDigit() } && newValue.length <= 2) {
 
-                                val numericValue = newValue.toIntOrNull()
+                                    val numericValue = newValue.toIntOrNull()
 
-                                if (numericValue == null || numericValue <= 59) {
-                                    secondInput = newValue
+                                    if (numericValue == null || numericValue <= 59) {
+                                        secondInput = newValue
+                                    }
                                 }
-                            }
-                        },
-                        singleLine = true,
-                        label = { Text("SS") },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
+                            },
+                            singleLine = true,
+                            label = { Text("SS") },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            )
                         )
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
 
-                        val minutes = minuteInput.toIntOrNull() ?: 0
-                        val seconds = secondInput.toIntOrNull() ?: 0
+                            val minutes = minuteInput.toIntOrNull() ?: 0
+                            val seconds = secondInput.toIntOrNull() ?: 0
 
-                        val totalMs = (minutes * 60 + seconds) * 1000L
+                            val totalMs = (minutes * 60 + seconds) * 1000L
 
-                        if (
-                            minutes in 0..60 &&
-                            seconds in 0..59 &&
-                            totalMs <= 60 * 60_000L &&
-                            totalMs > 0
-                        ) {
-                            viewModel.setGameDuration(minutes, seconds)
+                            if (
+                                minutes in 0..60 &&
+                                seconds in 0..59 &&
+                                totalMs <= 60 * 60_000L &&
+                                totalMs > 0
+                            ) {
+                                viewModel.setGameDuration(minutes, seconds)
 
-                            showGameDialog = false
+                                viewModel.closeGameDialog()
+                                minuteInput = ""
+                                secondInput = ""
+                            }
+                        }
+                    ) {
+                        Text("Confirm")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.closeGameDialog()
                             minuteInput = ""
                             secondInput = ""
                         }
+                    ) {
+                        Text("Cancel")
                     }
-                ) {
-                    Text("Confirm")
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showGameDialog = false
-                        minuteInput = ""
-                        secondInput = ""
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            }
 
-        )
+            )
+        }
     }
 
 //    Buzzer
