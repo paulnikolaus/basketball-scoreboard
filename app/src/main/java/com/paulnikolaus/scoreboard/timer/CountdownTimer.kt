@@ -57,10 +57,12 @@ class CountdownTimer(
         _isRunning.value = false
     }
 
-    fun reset() {
-        stop()
-        _remainingMs.value = totalDurationMs
-    }
+//    Replaced by Set Time
+
+//    fun reset() {
+//        stop()
+//        _remainingMs.value = totalDurationMs
+//    }
 
     fun isRunning(): Boolean = job?.isActive == true
 }
