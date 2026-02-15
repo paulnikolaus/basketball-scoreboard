@@ -1,5 +1,6 @@
 package com.paulnikolaus.scoreboard
 
+import androidx.lifecycle.SavedStateHandle
 import com.paulnikolaus.scoreboard.data.Team
 import com.paulnikolaus.scoreboard.presentation.ScoreboardViewModel
 import org.junit.Assert.*
@@ -12,7 +13,8 @@ class ScoreboardViewModelTest {
 
     @Before
     fun setup() {
-        viewModel = ScoreboardViewModel()
+        val savedStateHandle = SavedStateHandle()
+        viewModel = ScoreboardViewModel(savedStateHandle)
     }
 
     @Test
