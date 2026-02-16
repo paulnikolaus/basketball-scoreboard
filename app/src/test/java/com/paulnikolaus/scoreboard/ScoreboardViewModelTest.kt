@@ -37,4 +37,29 @@ class ScoreboardViewModelTest {
 
         assertEquals(0, score.home)
     }
+
+    @Test
+    fun resetScores_setsBothToZero() {
+
+        viewModel.addScore(Team.HOME, 5)
+        viewModel.addScore(Team.AWAY, 3)
+
+        viewModel.resetScores()
+
+        val score = viewModel.scoreState.value
+
+        assertEquals(0, score.home)
+        assertEquals(0, score.away)
+    }
+
+    @Test
+    fun multipleAddScore_accumulatesCorrectly() {
+
+        viewModel.addScore(Team.HOME, 2)
+        viewModel.addScore(Team.HOME, 3)
+
+        assertEquals(5, viewModel.scoreState.value.home)
+    }
+
+
 }

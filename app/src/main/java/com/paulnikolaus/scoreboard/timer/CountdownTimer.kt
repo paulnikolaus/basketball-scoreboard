@@ -21,6 +21,8 @@ class CountdownTimer(
     private var endTimestamp: Long = 0L
     private var job: Job? = null
 
+    private val timeProvider: () -> Long = { SystemClock.elapsedRealtime() }
+
     fun setDuration(durationMs: Long) {
         totalDurationMs = durationMs
         _remainingMs.value = durationMs
@@ -31,13 +33,12 @@ class CountdownTimer(
 
         _isRunning.value = true
 
-        endTimestamp = SystemClock.elapsedRealtime() + _remainingMs.value
+        endTimestamp = timeProvider() + _remainingMs.value
 
         job = scope.launch {
             while (isActive) {
 
-                val remaining =
-                    endTimestamp - SystemClock.elapsedRealtime()
+                val remaining = endTimestamp - timeProvider()
 
                 if (remaining <= 0L) {
                     _remainingMs.value = 0L
