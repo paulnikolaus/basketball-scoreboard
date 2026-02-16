@@ -423,7 +423,6 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
         }
     }
 
-
     DisposableEffect(Unit) {
         onDispose {
             buzzerManager.release()

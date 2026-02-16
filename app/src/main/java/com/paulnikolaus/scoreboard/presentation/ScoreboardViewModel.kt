@@ -95,12 +95,10 @@ class ScoreboardViewModel(
         // ----------------------------
 
         val restoredGameTime =
-            savedStateHandle.get<Long>(KEY_GAME_TIME)
-                ?: (10 * 60_000L)
+            savedStateHandle.get<Long>(KEY_GAME_TIME) ?: (10 * 60_000L)
 
         val gameWasRunning =
-            savedStateHandle.get<Boolean>(KEY_GAME_RUNNING)
-                ?: false
+            savedStateHandle.get<Boolean>(KEY_GAME_RUNNING) ?: false
 
         gameClock.setDuration(restoredGameTime)
 
@@ -113,12 +111,10 @@ class ScoreboardViewModel(
         // ----------------------------
 
         val restoredShotTime =
-            savedStateHandle.get<Long>(KEY_SHOT_TIME)
-                ?: 24_000L
+            savedStateHandle.get<Long>(KEY_SHOT_TIME) ?: 24_000L
 
         val shotWasRunning =
-            savedStateHandle.get<Boolean>(KEY_SHOT_RUNNING)
-                ?: false
+            savedStateHandle.get<Boolean>(KEY_SHOT_RUNNING) ?: false
 
         shotClock.setDuration(restoredShotTime)
 

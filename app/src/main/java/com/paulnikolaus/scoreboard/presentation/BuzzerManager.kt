@@ -14,8 +14,8 @@ class BuzzerManager(context: Context) {
     init {
 
         val audioAttributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .setUsage(AudioAttributes.USAGE_MEDIA)              // ← changed
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC) // ← changed
             .build()
 
         soundPool = SoundPool.Builder()
@@ -25,7 +25,6 @@ class BuzzerManager(context: Context) {
 
         soundId = soundPool.load(context, R.raw.buzzer, 1)
 
-        // VERY IMPORTANT
         soundPool.setOnLoadCompleteListener { _, _, status ->
             if (status == 0) {
                 isLoaded = true
