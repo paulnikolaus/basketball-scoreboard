@@ -310,6 +310,7 @@ fun ScoreboardScreen(
                 IconButton(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
+                        .statusBarsPadding()
                         .padding(8.dp),
                     onClick = { showSettingsDialog = true }
                 ) {
