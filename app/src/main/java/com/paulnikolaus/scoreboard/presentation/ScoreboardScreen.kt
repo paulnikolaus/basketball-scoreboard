@@ -1,5 +1,6 @@
 package com.paulnikolaus.scoreboard.presentation
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,9 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.*
-import android.content.res.Configuration
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.KeyboardType
 import com.paulnikolaus.scoreboard.data.Team
 import com.paulnikolaus.scoreboard.ui.components.ScorePanel
@@ -20,7 +22,11 @@ import com.paulnikolaus.scoreboard.ui.components.ClockDisplay
 
 
 @Composable
-fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
+fun ScoreboardScreen(
+    viewModel: ScoreboardViewModel,
+    isDarkMode: Boolean,
+    onToggleDarkMode: (Boolean) -> Unit
+) {
 
     val score by viewModel.scoreState.collectAsState()
     val gameMs by viewModel.gameTime.collectAsState()
@@ -92,6 +98,8 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
 
     val gameBuzz by viewModel.gameBuzzerEvent.collectAsState()
     val shotBuzz by viewModel.shotBuzzerEvent.collectAsState()
+
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     Surface {
         Row(
@@ -295,16 +303,35 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
-                contentAlignment = Alignment.Center
+                    .fillMaxHeight()
             ) {
-                ScorePanel(
-                    teamName = "AWAY",
-                    score = score.away,
-                    onAdd = { viewModel.addScore(Team.AWAY, it) },
-                    onUndo = { viewModel.undoScore(Team.AWAY) }
-                )
+
+                // Settings Icon (top right)
+                IconButton(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp),
+                    onClick = { showSettingsDialog = true }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings"
+                    )
+                }
+
+                // AWAY Score in Center
+                Box(
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    ScorePanel(
+                        teamName = "AWAY",
+                        score = score.away,
+                        onAdd = { viewModel.addScore(Team.AWAY, it) },
+                        onUndo = { viewModel.undoScore(Team.AWAY) }
+                    )
+                }
             }
+
         }
 
         //    Set time dialog
@@ -405,6 +432,40 @@ fun ScoreboardScreen(viewModel: ScoreboardViewModel) {
 
             )
         }
+
+//        Settings
+        if (showSettingsDialog) {
+            AlertDialog(
+                onDismissRequest = { showSettingsDialog = false },
+                title = { Text("Settings") },
+                text = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Text(
+                            text = "Dark Mode",
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        Switch(
+                            checked = isDarkMode,
+                            onCheckedChange = { enabled ->
+                                onToggleDarkMode(enabled)
+                            }
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { showSettingsDialog = false }
+                    ) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
+
     }
 
 //    Buzzer
