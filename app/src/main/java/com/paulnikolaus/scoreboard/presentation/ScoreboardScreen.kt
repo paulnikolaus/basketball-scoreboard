@@ -400,20 +400,14 @@ fun ScoreboardScreen(
                             val minutes = minuteInput.toIntOrNull() ?: 0
                             val seconds = secondInput.toIntOrNull() ?: 0
 
-                            val totalMs = (minutes * 60 + seconds) * 1000L
+                            val success = viewModel.setGameTimeIfValid(minutes, seconds)
 
-                            if (
-                                minutes in 0..60 &&
-                                seconds in 0..59 &&
-                                totalMs <= 60 * 60_000L &&
-                                totalMs > 0
-                            ) {
-                                viewModel.setGameDuration(minutes, seconds)
-
+                            if (success) {
                                 viewModel.closeGameDialog()
                                 minuteInput = ""
                                 secondInput = ""
                             }
+
                         }
                     ) {
                         Text("Confirm")

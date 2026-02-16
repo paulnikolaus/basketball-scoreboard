@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.paulnikolaus.scoreboard.domain.GameTimeValidator
 
 class ScoreboardViewModel(
     private val savedStateHandle: SavedStateHandle
@@ -179,23 +180,14 @@ class ScoreboardViewModel(
     // ----------------------------
 
     fun setGameDuration(minutes: Int, seconds: Int) {
-        if (
-            minutes in 0..60 &&
-            seconds in 0..59
-        ) {
 
-            val totalMs = (minutes * 60 + seconds) * 1000L
+        val totalMs = (minutes * 60 + seconds) * 1000L
 
-            // Prevent values > 60:00
-            if (totalMs <= 60 * 60_000L) {
+        gameClock.stop()
+        gameClock.setDuration(totalMs)
 
-                gameClock.stop()
-                gameClock.setDuration(totalMs)
-
-                savedStateHandle[KEY_GAME_TIME] = totalMs
-                savedStateHandle[KEY_GAME_RUNNING] = false
-            }
-        }
+        savedStateHandle[KEY_GAME_TIME] = totalMs
+        savedStateHandle[KEY_GAME_RUNNING] = false
     }
 
     fun toggleGameClock() {
@@ -289,4 +281,18 @@ class ScoreboardViewModel(
     fun consumeShotBuzzer() {
         _shotBuzzerEvent.value = false
     }
+
+//    GameTimeValidator
+    fun setGameTimeIfValid(minutes: Int, seconds: Int): Boolean {
+
+        return if (GameTimeValidator.isValid(minutes, seconds)) {
+
+            setGameDuration(minutes, seconds)
+            true
+
+        } else {
+            false
+        }
+    }
+
 }
