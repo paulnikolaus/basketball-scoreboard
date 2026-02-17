@@ -1,5 +1,6 @@
-![GitHub release](https://img.shields.io/github/v/release/paulnikolaus/basketball-scoreboard/)
-![License](https://img.shields.io/github/license/paulnikolaus/basketball-scoreboard/)
+![GitHub release](https://img.shields.io/github/v/release/paulnikolaus/basketball-scoreboard)
+![License](https://img.shields.io/github/license/paulnikolaus/basketball-scoreboard)
+
 
 # 🏀 ScoreBoard – Android Basketball Scoreboard
 
