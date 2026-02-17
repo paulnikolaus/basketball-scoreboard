@@ -3,7 +3,6 @@
 
 # Gradle
 .gradle/
-build/
 
 # Local config (contains SDK path)
 local.properties
@@ -28,3 +27,11 @@ captures/
 # Keystore files (VERY IMPORTANT)
 *.jks
 *.keystore
+
+# Build outputs
+build/
+app/build/
+
+# Android bundles
+*.apk
+*.aab
