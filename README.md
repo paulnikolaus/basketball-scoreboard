@@ -1,3 +1,9 @@
+![GitHub release](https://img.shields.io/github/v/release/paulnikolaus/basketball-scoreboard/)
+![License](https://img.shields.io/github/license/paulnikolaus/basketball-scoreboard/)
+
+# 🏀 ScoreBoard – Android Basketball Scoreboard
+
+
 # ScoreBoard (Android – Jetpack Compose)
 
 A modern basketball scoreboard app built with Jetpack Compose.
