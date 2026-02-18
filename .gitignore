@@ -28,10 +28,15 @@ captures/
 *.jks
 *.keystore
 
-# Build outputs
-build/
-app/build/
+# Build
+/build/
+/app/build/
 
-# Android bundles
+# Release output
 *.apk
 *.aab
+*.dm
+output-metadata.json
+
+# Baseline profiles
+baselineProfiles/
