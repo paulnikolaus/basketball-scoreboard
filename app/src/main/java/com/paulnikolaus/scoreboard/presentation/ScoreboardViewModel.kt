@@ -12,10 +12,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.paulnikolaus.scoreboard.domain.GameTimeValidator
 
+/**
+ * ViewModel responsible for managing the scoreboard state, including scores,
+ * game timers, and shot clocks. It uses [SavedStateHandle] to ensure data
+ * survives process death or configuration changes.
+ */
 class ScoreboardViewModel(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
+    // Keys used for saving and restoring state from SavedStateHandle
     companion object {
         private const val KEY_HOME = "home_score"
         private const val KEY_AWAY = "away_score"
@@ -25,27 +31,25 @@ class ScoreboardViewModel(
         private const val KEY_SHOT_RUNNING = "shot_running"
     }
 
-
     // ----------------------------
     // Timers
     // ----------------------------
 
-    private val gameClock =
-        CountdownTimer(viewModelScope)
+    // The main game clock (e.g., 10:00)
+    private val gameClock = CountdownTimer(viewModelScope)
 
-    private val shotClock =
-        CountdownTimer(viewModelScope)
+    // The shot clock (e.g., 24s or 14s)
+    private val shotClock = CountdownTimer(viewModelScope)
 
-    val isShotClockRunning: StateFlow<Boolean>
-        get() = shotClock.isRunningFlow
-
-    val isGameClockRunning: StateFlow<Boolean>
-        get() = gameClock.isRunningFlow
+    // Exposed flows to observe if timers are currently ticking
+    val isShotClockRunning: StateFlow<Boolean> = shotClock.isRunningFlow
+    val isGameClockRunning: StateFlow<Boolean> = gameClock.isRunningFlow
 
     // ----------------------------
     // Buzzer Timer Events
     // ----------------------------
 
+    // These events trigger the buzzer sound in the UI layer
     private val _gameBuzzerEvent = MutableStateFlow(false)
     val gameBuzzerEvent: StateFlow<Boolean> = _gameBuzzerEvent
 
@@ -57,90 +61,47 @@ class ScoreboardViewModel(
     // ----------------------------
 
     private val _scoreState = MutableStateFlow(ScoreState())
-    val scoreState: StateFlow<ScoreState> =
-        _scoreState.asStateFlow()
+    val scoreState: StateFlow<ScoreState> = _scoreState.asStateFlow()
 
     // ----------------------------
     // Dialog State
     // ----------------------------
 
     private val _showGameDialog = MutableStateFlow(false)
-    val showGameDialog: StateFlow<Boolean> =
-        _showGameDialog.asStateFlow()
+    val showGameDialog: StateFlow<Boolean> = _showGameDialog.asStateFlow()
 
-    fun openGameDialog() {
-        _showGameDialog.value = true
-    }
-
-    fun closeGameDialog() {
-        _showGameDialog.value = false
-    }
-
+    fun openGameDialog() { _showGameDialog.value = true }
+    fun closeGameDialog() { _showGameDialog.value = false }
 
     init {
-
-        // ----------------------------
-        // Restore Scores
-        // ----------------------------
-
+        // --- Restore Scores from bundle ---
         val restoredHome = savedStateHandle.get<Int>(KEY_HOME) ?: 0
         val restoredAway = savedStateHandle.get<Int>(KEY_AWAY) ?: 0
+        _scoreState.value = ScoreState(home = restoredHome, away = restoredAway)
 
-        _scoreState.value = ScoreState(
-            home = restoredHome,
-            away = restoredAway
-        )
-
-        // ----------------------------
-        // Restore Game Clock
-        // ----------------------------
-
-        val restoredGameTime =
-            savedStateHandle.get<Long>(KEY_GAME_TIME) ?: (10 * 60_000L)
-
-        val gameWasRunning =
-            savedStateHandle.get<Boolean>(KEY_GAME_RUNNING) ?: false
-
+        // --- Restore Game Clock ---
+        val restoredGameTime = savedStateHandle.get<Long>(KEY_GAME_TIME) ?: (10 * 60_000L)
+        val gameWasRunning = savedStateHandle.get<Boolean>(KEY_GAME_RUNNING) ?: false
         gameClock.setDuration(restoredGameTime)
+        if (gameWasRunning) gameClock.start()
 
-        if (gameWasRunning) {
-            gameClock.start()
-        }
-
-        // ----------------------------
-        // Restore Shot Clock
-        // ----------------------------
-
-        val restoredShotTime =
-            savedStateHandle.get<Long>(KEY_SHOT_TIME) ?: 24_000L
-
-        val shotWasRunning =
-            savedStateHandle.get<Boolean>(KEY_SHOT_RUNNING) ?: false
-
+        // --- Restore Shot Clock ---
+        val restoredShotTime = savedStateHandle.get<Long>(KEY_SHOT_TIME) ?: 24_000L
+        val shotWasRunning = savedStateHandle.get<Boolean>(KEY_SHOT_RUNNING) ?: false
         shotClock.setDuration(restoredShotTime)
+        if (shotWasRunning) shotClock.start()
 
-        if (shotWasRunning) {
-            shotClock.start()
-        }
-
-
-        // ----------------------------
-        // Persist Time Continuously
-        // ----------------------------
-
+        // --- Persistence Observers ---
+        // Automatically save timer progress to SavedStateHandle as it ticks
         viewModelScope.launch {
-            gameTime.collect { remaining ->
-                savedStateHandle[KEY_GAME_TIME] = remaining
-            }
+            gameTime.collect { remaining -> savedStateHandle[KEY_GAME_TIME] = remaining }
         }
-
         viewModelScope.launch {
-            shotTime.collect { remaining ->
-                savedStateHandle[KEY_SHOT_TIME] = remaining
-            }
+            shotTime.collect { remaining -> savedStateHandle[KEY_SHOT_TIME] = remaining }
         }
 
-//        Game clock zero detection
+        // --- Game Buzzer Detection ---
+        // Triggers buzzer when timer transitions from positive to zero
         viewModelScope.launch {
             var previous = gameClock.remainingMs.value
             gameTime.collect { current ->
@@ -151,7 +112,7 @@ class ScoreboardViewModel(
             }
         }
 
-//        Shot clock zero detection
+        // --- Shot Buzzer Detection ---
         viewModelScope.launch {
             var previous = shotClock.remainingMs.value
             shotTime.collect { current ->
@@ -161,28 +122,24 @@ class ScoreboardViewModel(
                 previous = current
             }
         }
-
-
     }
 
     // ----------------------------
     // Exposed Timer Flows
     // ----------------------------
 
-    val gameTime: StateFlow<Long>
-        get() = gameClock.remainingMs
-
-    val shotTime: StateFlow<Long>
-        get() = shotClock.remainingMs
+    val gameTime: StateFlow<Long> get() = gameClock.remainingMs
+    val shotTime: StateFlow<Long> get() = shotClock.remainingMs
 
     // ----------------------------
     // Game Clock Controls
     // ----------------------------
 
+    /**
+     * Updates the game clock to a specific time and stops it.
+     */
     fun setGameDuration(minutes: Int, seconds: Int) {
-
         val totalMs = (minutes * 60 + seconds) * 1000L
-
         gameClock.stop()
         gameClock.setDuration(totalMs)
 
@@ -190,43 +147,29 @@ class ScoreboardViewModel(
         savedStateHandle[KEY_GAME_RUNNING] = false
     }
 
+    /**
+     * Toggles the main game clock on or off.
+     */
     fun toggleGameClock() {
-        if (gameClock.isRunning()) {
-            gameClock.stop()
-        } else {
-            gameClock.start()
-        }
-
+        if (gameClock.isRunning()) gameClock.stop() else gameClock.start()
         savedStateHandle[KEY_GAME_RUNNING] = gameClock.isRunning()
     }
-
-//    replaced by Set Time
-
-//    fun resetGameClock() {
-//        gameClock.reset()
-//
-//        savedStateHandle[KEY_GAME_RUNNING] = false
-//    }
 
     // ----------------------------
     // Shot Clock Controls
     // ----------------------------
 
+    /**
+     * Resets the shot clock to a specific value (usually 24 or 14).
+     */
     fun resetShotClock(seconds: Int) {
-        shotClock.stop()                 // ensure it is stopped
+        shotClock.stop()
         shotClock.setDuration(seconds * 1000L)
-
         savedStateHandle[KEY_SHOT_RUNNING] = false
     }
 
-
     fun toggleShotClock() {
-        if (shotClock.isRunning()) {
-            shotClock.stop()
-        } else {
-            shotClock.start()
-        }
-
+        if (shotClock.isRunning()) shotClock.stop() else shotClock.start()
         savedStateHandle[KEY_SHOT_RUNNING] = shotClock.isRunning()
     }
 
@@ -234,65 +177,59 @@ class ScoreboardViewModel(
     // Score Controls
     // ----------------------------
 
+    /**
+     * Adds specific points to either the Home or Away team.
+     */
     fun addScore(team: Team, points: Int) {
-
         _scoreState.value = when (team) {
-            Team.HOME -> _scoreState.value.copy(
-                home = _scoreState.value.home + points
-            )
-
-            Team.AWAY -> _scoreState.value.copy(
-                away = _scoreState.value.away + points
-            )
+            Team.HOME -> _scoreState.value.copy(home = _scoreState.value.home + points)
+            Team.AWAY -> _scoreState.value.copy(away = _scoreState.value.away + points)
         }
-
-        savedStateHandle[KEY_HOME] = _scoreState.value.home
-        savedStateHandle[KEY_AWAY] = _scoreState.value.away
+        syncScoresToSavedState()
     }
 
+    /**
+     * Decrements the score for a team by 1 (minimum 0).
+     */
     fun undoScore(team: Team) {
-
         _scoreState.value = when (team) {
-            Team.HOME -> _scoreState.value.copy(
-                home = (_scoreState.value.home - 1).coerceAtLeast(0)
-            )
-
-            Team.AWAY -> _scoreState.value.copy(
-                away = (_scoreState.value.away - 1).coerceAtLeast(0)
-            )
+            Team.HOME -> _scoreState.value.copy(home = (_scoreState.value.home - 1).coerceAtLeast(0))
+            Team.AWAY -> _scoreState.value.copy(away = (_scoreState.value.away - 1).coerceAtLeast(0))
         }
-
-        savedStateHandle[KEY_HOME] = _scoreState.value.home
-        savedStateHandle[KEY_AWAY] = _scoreState.value.away
+        syncScoresToSavedState()
     }
 
+    /**
+     * Resets both scores to zero.
+     */
     fun resetScores() {
         _scoreState.value = ScoreState()
+        syncScoresToSavedState()
+    }
 
+    private fun syncScoresToSavedState() {
         savedStateHandle[KEY_HOME] = _scoreState.value.home
         savedStateHandle[KEY_AWAY] = _scoreState.value.away
     }
 
-    //    Game buzzer
-    fun consumeGameBuzzer() {
-        _gameBuzzerEvent.value = false
-    }
+    // ----------------------------
+    // Buzzer Consumption
+    // ----------------------------
 
-    fun consumeShotBuzzer() {
-        _shotBuzzerEvent.value = false
-    }
+    // Resets buzzer flags once the UI has handled the sound/animation
+    fun consumeGameBuzzer() { _gameBuzzerEvent.value = false }
+    fun consumeShotBuzzer() { _shotBuzzerEvent.value = false }
 
-//    GameTimeValidator
+    /**
+     * Validates input before updating the game clock duration.
+     * @return True if successful, False if validation failed.
+     */
     fun setGameTimeIfValid(minutes: Int, seconds: Int): Boolean {
-
         return if (GameTimeValidator.isValid(minutes, seconds)) {
-
             setGameDuration(minutes, seconds)
             true
-
         } else {
             false
         }
     }
-
 }
