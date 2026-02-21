@@ -10,6 +10,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+/**
+ * A reusable UI component to display a labeled clock (Game or Shot clock)
+ * along with its specific control buttons.
+ *
+ * @param title The label shown above the time (e.g., "GAME" or "SHOT").
+ * @param timeText The formatted string representing the remaining time.
+ * @param textColor The color of the time text (used for visual alerts like red when stopped).
+ * @param controls A slot for Composable buttons/controls specific to this clock.
+ */
 @Composable
 fun ClockDisplay(
     title: String,
@@ -23,13 +32,16 @@ fun ClockDisplay(
         verticalArrangement = Arrangement.Center
     ) {
 
+        // Display the label for the clock
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge
         )
 
-        Spacer(Modifier.height(4.dp))   // slightly tighter title → time
+        // Slight spacing for a tighter visual connection between title and time
+        Spacer(Modifier.height(4.dp))
 
+        // Display the large, bold countdown numbers
         Text(
             text = timeText,
             color = textColor,
@@ -38,8 +50,10 @@ fun ClockDisplay(
             )
         )
 
-        Spacer(Modifier.height(4.dp))   // reduced from 12dp → cleaner
+        // Spacing between the clock numbers and the action buttons
+        Spacer(Modifier.height(4.dp))
 
+        // Render the control buttons passed from the parent screen
         controls()
     }
 }
