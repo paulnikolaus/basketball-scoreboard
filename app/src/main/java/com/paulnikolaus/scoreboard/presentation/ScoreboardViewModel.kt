@@ -18,7 +18,10 @@ import com.paulnikolaus.scoreboard.domain.GameTimeValidator
  * survives process death or configuration changes.
  */
 class ScoreboardViewModel(
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
+    // Add these optional providers for testing
+    gameTimeProvider: () -> Long = { android.os.SystemClock.elapsedRealtime() },
+    shotTimeProvider: () -> Long = { android.os.SystemClock.elapsedRealtime() }
 ) : ViewModel() {
 
     // Keys used for saving and restoring state from SavedStateHandle
@@ -36,10 +39,10 @@ class ScoreboardViewModel(
     // ----------------------------
 
     // The main game clock (e.g., 10:00)
-    private val gameClock = CountdownTimer(viewModelScope)
+    private val gameClock = CountdownTimer(viewModelScope, timeProvider = gameTimeProvider)
 
     // The shot clock (e.g., 24s or 14s)
-    private val shotClock = CountdownTimer(viewModelScope)
+    private val shotClock = CountdownTimer(viewModelScope, timeProvider = shotTimeProvider)
 
     // Exposed flows to observe if timers are currently ticking
     val isShotClockRunning: StateFlow<Boolean> = shotClock.isRunningFlow
@@ -149,9 +152,24 @@ class ScoreboardViewModel(
 
     /**
      * Toggles the main game clock on or off.
+     * If the game clock is stopped, the shot clock is also stopped automatically.
      */
     fun toggleGameClock() {
-        if (gameClock.isRunning()) gameClock.stop() else gameClock.start()
+        if (gameClock.isRunning()) {
+            // Stop the game clock
+            gameClock.stop()
+
+            // NEW CONSTRAINT: If game stops, shot clock MUST stop
+            if (shotClock.isRunning()) {
+                shotClock.stop()
+                savedStateHandle[KEY_SHOT_RUNNING] = false
+            }
+        } else {
+            // Start the game clock
+            gameClock.start()
+        }
+
+        // Sync the state to handle process death
         savedStateHandle[KEY_GAME_RUNNING] = gameClock.isRunning()
     }
 

@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.paulnikolaus.scoreboard.presentation.ScoreboardScreen
 import com.paulnikolaus.scoreboard.presentation.ScoreboardViewModel
@@ -54,7 +55,22 @@ class MainActivity : ComponentActivity() {
                 darkTheme = finalDarkMode
             ) {
                 // Initialize the main Scoreboard ViewModel
-                val scoreboardViewModel: ScoreboardViewModel = viewModel()
+                val scoreboardViewModel: ScoreboardViewModel = viewModel(
+                    factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : androidx.lifecycle.ViewModel> create(
+                            modelClass: Class<T>,
+                            extras: androidx.lifecycle.viewmodel.CreationExtras
+                        ): T {
+                            // Obtain the SavedStateHandle from the CreationExtras
+                            val handle = extras.createSavedStateHandle()
+
+                            // Manually create the ViewModel and inject the SavedStateHandle.
+                            // The time providers will use their default values automatically.
+                            return ScoreboardViewModel(handle) as T
+                        }
+                    }
+                )
 
                 // Display the main UI screen
                 ScoreboardScreen(

@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class CountdownTimer(
     private val scope: CoroutineScope,
-    private val tickIntervalMs: Long = 50L // Default update interval (20 times per second)
+    private val tickIntervalMs: Long = 50L,
+    // Add this parameter: default to the real Android clock
+    private val timeProvider: () -> Long = { SystemClock.elapsedRealtime() }
 ) {
 
     // Current remaining time in milliseconds
@@ -27,12 +29,6 @@ class CountdownTimer(
     private var totalDurationMs: Long = 0L
     private var endTimestamp: Long = 0L
     private var job: Job? = null
-
-    /**
-     * timeProvider uses elapsedRealtime() which is the time since the device booted.
-     * Unlike Wall Clock time, this is not affected by time zone changes or manual clock updates.
-     */
-    private val timeProvider: () -> Long = { SystemClock.elapsedRealtime() }
 
     /**
      * Initializes or overrides the timer's duration.
