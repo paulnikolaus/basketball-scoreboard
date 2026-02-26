@@ -24,7 +24,7 @@ android {
         targetSdk = 36
 
         // Version tracking for Play Store releases
-        versionCode = 4
+        versionCode = 5
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
