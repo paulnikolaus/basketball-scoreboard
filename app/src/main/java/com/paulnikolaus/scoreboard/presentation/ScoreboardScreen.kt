@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,41 +44,9 @@ fun ScoreboardScreen(
     val shotMs by viewModel.shotTime.collectAsState()
 
     // --- DYNAMIC TIME FORMATTING ---
-
-    /**
-     * Logic for the Game Timer:
-     * Displays Minutes:Seconds (e.g., 10:00) until the clock hits 10 seconds.
-     * Below 10 seconds, it switches to "Tenths Mode" (e.g., 9.4) for high-stakes accuracy.
-     */
-    val gameTimeText = run {
-        val totalMs = gameMs
-        if (totalMs >= 10_000L) {
-            val totalSeconds = (totalMs / 1000).toInt()
-            val minutes = totalSeconds / 60
-            val seconds = totalSeconds % 60
-            "%d:%02d".format(minutes, seconds)
-        } else {
-            val seconds = totalMs / 1000
-            val tenths = (totalMs % 1000) / 100
-            "%.1f".format(seconds + tenths / 10f)
-        }
-    }
-
-    /**
-     * Logic for the Shot Clock:
-     * Usually 24 or 14. Also switches to tenths (e.g., 4.2) when time is running out.
-     */
-    val shotTimeText = run {
-        val totalMs = shotMs
-        if (totalMs >= 10_000L) {
-            val seconds = (totalMs / 1000).toInt()
-            "%02d".format(seconds)
-        } else {
-            val seconds = totalMs / 1000
-            val tenths = (totalMs % 1000) / 100
-            "%.1f".format(seconds + tenths / 10f)
-        }
-    }
+    // Switches to tenths (e.g., 9.4) below 10 seconds; see TimeFormat.kt
+    val gameTimeText = formatGameTime(gameMs)
+    val shotTimeText = formatShotTime(shotMs)
 
     // UI Constants
     val shotButtonHeight = 48.dp
@@ -87,8 +56,9 @@ fun ScoreboardScreen(
 
     // --- DIALOG INPUT STATE ---
     // These are local to the UI because they are only used while the user is typing.
-    var minuteInput by remember { mutableStateOf("") }
-    var secondInput by remember { mutableStateOf("") }
+    // rememberSaveable keeps the typed values when the phone is rotated while the dialog is open.
+    var minuteInput by rememberSaveable { mutableStateOf("") }
+    var secondInput by rememberSaveable { mutableStateOf("") }
 
 
     // --- VISUAL FEEDBACK COLORS ---
@@ -109,7 +79,9 @@ fun ScoreboardScreen(
     val gameBuzz by viewModel.gameBuzzerEvent.collectAsState()
     val shotBuzz by viewModel.shotBuzzerEvent.collectAsState()
 
-    var showSettingsDialog by remember { mutableStateOf(false) }
+    // rememberSaveable keeps these dialogs open if the phone is rotated while they're shown
+    var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
+    var showResetDialog by rememberSaveable { mutableStateOf(false) }
 
     Surface {
         // Main structural layout: Left (Home), Center (Clocks), Right (Away)
@@ -198,14 +170,13 @@ fun ScoreboardScreen(
                         }
                     )
 
-                    // Extra spacing and Global Reset button (Only shown in Portrait to avoid clutter)
-                    if (!isLandscape) {
-                        Spacer(Modifier.height(32.dp))
-                        Button(
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                            onClick = { viewModel.resetScores() }
-                        ) { Text("RESET SCORE") }
-                    }
+                    // Global Reset button, shown in both orientations (less spacing in Landscape).
+                    // It only opens a confirmation dialog, so a stray tap can't wipe the game.
+                    Spacer(Modifier.height(if (isLandscape) 16.dp else 32.dp))
+                    Button(
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        onClick = { showResetDialog = true }
+                    ) { Text("RESET SCORE") }
                 }
             }
 
@@ -298,6 +269,30 @@ fun ScoreboardScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showSettingsDialog = false }) { Text("Close") }
+                }
+            )
+        }
+
+        /**
+         * "Reset Score" Confirmation Dialog:
+         * Resetting wipes both scores, so we ask before doing it.
+         */
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                title = { Text("Reset Score?") },
+                text = { Text("Both scores will be set to 0. This cannot be undone.") },
+                confirmButton = {
+                    Button(
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        onClick = {
+                            viewModel.resetScores()
+                            showResetDialog = false
+                        }
+                    ) { Text("Reset") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResetDialog = false }) { Text("Cancel") }
                 }
             )
         }
