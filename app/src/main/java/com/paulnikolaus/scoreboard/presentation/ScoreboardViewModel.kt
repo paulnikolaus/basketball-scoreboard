@@ -110,6 +110,12 @@ class ScoreboardViewModel(
             gameTime.collect { current ->
                 if (previous > 0 && current == 0L) {
                     _gameBuzzerEvent.value = true
+
+                    // The period is over: the shot clock must not keep running,
+                    // and the saved "running" flags must not restart the clocks after process death
+                    shotClock.stop()
+                    savedStateHandle[KEY_GAME_RUNNING] = false
+                    savedStateHandle[KEY_SHOT_RUNNING] = false
                 }
                 previous = current
             }
@@ -121,6 +127,7 @@ class ScoreboardViewModel(
             shotTime.collect { current ->
                 if (previous > 0 && current == 0L) {
                     _shotBuzzerEvent.value = true
+                    savedStateHandle[KEY_SHOT_RUNNING] = false
                 }
                 previous = current
             }

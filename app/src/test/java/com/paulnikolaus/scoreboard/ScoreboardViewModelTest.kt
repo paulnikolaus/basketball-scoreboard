@@ -3,18 +3,36 @@ package com.paulnikolaus.scoreboard
 import androidx.lifecycle.SavedStateHandle
 import com.paulnikolaus.scoreboard.data.Team
 import com.paulnikolaus.scoreboard.presentation.ScoreboardViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Unit tests for the [ScoreboardViewModel].
  * These tests verify the logic for scoring, undoing points, resetting
  * the game state, and the synchronization between the Game and Shot clocks.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ScoreboardViewModelTest {
 
     private lateinit var viewModel: ScoreboardViewModel
+    private lateinit var savedStateHandle: SavedStateHandle
+
+    // Runs viewModelScope coroutines under our control instead of on a background thread
+    private val testDispatcher = StandardTestDispatcher()
+
+    // Fake clock in milliseconds. Tests move time forward by assigning to it.
+    private var now = 0L
 
     /**
      * Initializes a fresh ViewModel before each test.
@@ -22,15 +40,21 @@ class ScoreboardViewModelTest {
      */
     @Before
     fun setup() {
-        val savedStateHandle = SavedStateHandle()
+        Dispatchers.setMain(testDispatcher)
+        savedStateHandle = SavedStateHandle()
 
-        // Provide a "fake" time provider that returns 0.
+        // Provide a fake time provider instead of SystemClock.
         // This stops the "SystemClock not mocked" error.
         viewModel = ScoreboardViewModel(
             savedStateHandle = savedStateHandle,
-            gameTimeProvider = { 0L },
-            shotTimeProvider = { 0L }
+            gameTimeProvider = { now },
+            shotTimeProvider = { now }
         )
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -92,6 +116,32 @@ class ScoreboardViewModelTest {
 
         assertTrue("Game clock should still be running", viewModel.isGameClockRunning.value)
         assertFalse("Shot clock should be stopped", viewModel.isShotClockRunning.value)
+    }
+
+    /**
+     * Verifies that the shot clock stops when the game clock runs out on its own
+     * (not only when the user presses Stop), and that no stale "running" flags are saved.
+     */
+    @Test
+    fun gameClockExpiry_stopsShotClock() = runTest(testDispatcher) {
+        // 1. Set a 1-second game and start both clocks
+        viewModel.setGameTimeIfValid(0, 1)
+        viewModel.toggleGameClock()
+        viewModel.toggleShotClock()
+        runCurrent() // Let the timers and observers start
+
+        // 2. Move the fake clock past the end of the game and let the timers tick
+        now = 1_000L
+        advanceTimeBy(100.milliseconds)
+        runCurrent()
+
+        // 3. The game is over: both clocks stopped, buzzer fired, nothing restarts after process death
+        assertEquals(0L, viewModel.gameTime.value)
+        assertTrue("Game buzzer should fire", viewModel.gameBuzzerEvent.value)
+        assertFalse("Game clock should be stopped", viewModel.isGameClockRunning.value)
+        assertFalse("Shot clock should stop with the game clock", viewModel.isShotClockRunning.value)
+        assertEquals(false, savedStateHandle.get<Boolean>("game_running"))
+        assertEquals(false, savedStateHandle.get<Boolean>("shot_running"))
     }
 
     @Test
