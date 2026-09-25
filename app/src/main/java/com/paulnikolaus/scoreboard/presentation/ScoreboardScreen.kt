@@ -97,8 +97,9 @@ fun ScoreboardScreen(
 
     // --- DIALOG INPUT STATE ---
     // These are local to the UI because they are only used while the user is typing.
-    var minuteInput by remember { mutableStateOf("") }
-    var secondInput by remember { mutableStateOf("") }
+    // rememberSaveable keeps the typed values when the phone is rotated while the dialog is open.
+    var minuteInput by rememberSaveable { mutableStateOf("") }
+    var secondInput by rememberSaveable { mutableStateOf("") }
 
 
     // --- VISUAL FEEDBACK COLORS ---
@@ -119,9 +120,8 @@ fun ScoreboardScreen(
     val gameBuzz by viewModel.gameBuzzerEvent.collectAsState()
     val shotBuzz by viewModel.shotBuzzerEvent.collectAsState()
 
-    var showSettingsDialog by remember { mutableStateOf(false) }
-
-    // rememberSaveable keeps the confirmation open if the phone is rotated while it's shown
+    // rememberSaveable keeps these dialogs open if the phone is rotated while they're shown
+    var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var showResetDialog by rememberSaveable { mutableStateOf(false) }
 
     Surface {
