@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.input.KeyboardType
@@ -120,6 +121,9 @@ fun ScoreboardScreen(
 
     var showSettingsDialog by remember { mutableStateOf(false) }
 
+    // rememberSaveable keeps the confirmation open if the phone is rotated while it's shown
+    var showResetDialog by rememberSaveable { mutableStateOf(false) }
+
     Surface {
         // Main structural layout: Left (Home), Center (Clocks), Right (Away)
         Row(modifier = Modifier.fillMaxSize()) {
@@ -207,14 +211,13 @@ fun ScoreboardScreen(
                         }
                     )
 
-                    // Extra spacing and Global Reset button (Only shown in Portrait to avoid clutter)
-                    if (!isLandscape) {
-                        Spacer(Modifier.height(32.dp))
-                        Button(
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
-                            onClick = { viewModel.resetScores() }
-                        ) { Text("RESET SCORE") }
-                    }
+                    // Global Reset button, shown in both orientations (less spacing in Landscape).
+                    // It only opens a confirmation dialog, so a stray tap can't wipe the game.
+                    Spacer(Modifier.height(if (isLandscape) 16.dp else 32.dp))
+                    Button(
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        onClick = { showResetDialog = true }
+                    ) { Text("RESET SCORE") }
                 }
             }
 
@@ -307,6 +310,30 @@ fun ScoreboardScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showSettingsDialog = false }) { Text("Close") }
+                }
+            )
+        }
+
+        /**
+         * "Reset Score" Confirmation Dialog:
+         * Resetting wipes both scores, so we ask before doing it.
+         */
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                title = { Text("Reset Score?") },
+                text = { Text("Both scores will be set to 0. This cannot be undone.") },
+                confirmButton = {
+                    Button(
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                        onClick = {
+                            viewModel.resetScores()
+                            showResetDialog = false
+                        }
+                    ) { Text("Reset") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResetDialog = false }) { Text("Cancel") }
                 }
             )
         }
