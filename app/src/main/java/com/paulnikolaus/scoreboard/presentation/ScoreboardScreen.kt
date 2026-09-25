@@ -22,6 +22,19 @@ import com.paulnikolaus.scoreboard.data.Team
 import com.paulnikolaus.scoreboard.ui.components.ScorePanel
 import com.paulnikolaus.scoreboard.ui.components.ClockDisplay
 import com.paulnikolaus.scoreboard.ui.theme.ForestGreen
+import java.util.Locale
+
+/**
+ * Formats a time below 10 seconds as seconds and tenths (e.g., 9450 ms -> "9.4").
+ *
+ * Uses integer math and [Locale.ROOT] so the separator is always a dot,
+ * regardless of the device language (German would otherwise show "9,4").
+ */
+private fun formatTenths(totalMs: Long): String {
+    val seconds = totalMs / 1000
+    val tenths = (totalMs % 1000) / 100
+    return "%d.%d".format(Locale.ROOT, seconds, tenths)
+}
 
 /**
  * The main UI screen for the Scoreboard application.
@@ -55,11 +68,9 @@ fun ScoreboardScreen(
             val totalSeconds = (totalMs / 1000).toInt()
             val minutes = totalSeconds / 60
             val seconds = totalSeconds % 60
-            "%d:%02d".format(minutes, seconds)
+            "%d:%02d".format(Locale.ROOT, minutes, seconds)
         } else {
-            val seconds = totalMs / 1000
-            val tenths = (totalMs % 1000) / 100
-            "%.1f".format(seconds + tenths / 10f)
+            formatTenths(totalMs)
         }
     }
 
@@ -71,11 +82,9 @@ fun ScoreboardScreen(
         val totalMs = shotMs
         if (totalMs >= 10_000L) {
             val seconds = (totalMs / 1000).toInt()
-            "%02d".format(seconds)
+            "%02d".format(Locale.ROOT, seconds)
         } else {
-            val seconds = totalMs / 1000
-            val tenths = (totalMs % 1000) / 100
-            "%.1f".format(seconds + tenths / 10f)
+            formatTenths(totalMs)
         }
     }
 
