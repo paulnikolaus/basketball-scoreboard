@@ -144,6 +144,33 @@ class ScoreboardViewModelTest {
         assertEquals(false, savedStateHandle.get<Boolean>("shot_running"))
     }
 
+    /**
+     * Verifies that when the shot clock runs out, the saved "running" flag is cleared,
+     * so the shot clock does not restart by itself after process death.
+     */
+    @Test
+    fun shotClockExpiry_clearsSavedRunningFlag() = runTest(testDispatcher) {
+        // 1. Start both clocks (the game clock is 10:00, so only the shot clock will expire)
+        viewModel.toggleGameClock()
+        viewModel.toggleShotClock()
+        runCurrent()
+        assertEquals(true, savedStateHandle.get<Boolean>("shot_running"))
+
+        // 2. Move the fake clock past the 24-second shot clock
+        now = 24_000L
+        advanceTimeBy(100.milliseconds)
+        runCurrent()
+
+        // 3. Shot clock expired and its flag is cleared; the game clock keeps running
+        assertEquals(0L, viewModel.shotTime.value)
+        assertTrue("Shot buzzer should fire", viewModel.shotBuzzerEvent.value)
+        assertEquals(false, savedStateHandle.get<Boolean>("shot_running"))
+        assertTrue("Game clock should still be running", viewModel.isGameClockRunning.value)
+
+        // 4. Stop the game clock, otherwise runTest would tick it forever (the fake clock never moves on)
+        viewModel.toggleGameClock()
+    }
+
     @Test
     fun multipleAddScore_accumulatesCorrectly() {
         viewModel.addScore(Team.HOME, 2)
